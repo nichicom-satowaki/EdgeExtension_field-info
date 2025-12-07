@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Field Info Helper",
+  "version": "1.0",
+  "description": "項目定義情報へのアクセスを支援する拡張機能",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:8081/*",
+    "https://*.wel-mother.jp/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Field Info Helper"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:8081/core/setup/field-info*",
+        "https://*.wel-mother.jp/core/setup/field-info*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+body {
+  width: 250px;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f5f5;
+}
+
+.container {
+  padding: 20px;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0 0 20px 0;
+  color: #333;
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #0078d4;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-align: center;
+}
+
+.btn:hover {
+  background-color: #106ebe;
+}
+
+.btn:active {
+  background-color: #005a9e;
+}
+
+.btn:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}
+
+#btn-boshi {
+  background-color: #107c10;
+}
+
+#btn-boshi:hover {
+  background-color: #0e6b0e;
+}
+
+#btn-boshi:active {
+  background-color: #0c5a0c;
+}
+
+.config-info {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.config-info small {
+  color: #666;
+  font-size: 11px;
+}
