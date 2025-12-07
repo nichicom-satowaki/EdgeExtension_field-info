@@ -9,12 +9,21 @@
 <body>
   <div class="container">
     <h1>Field Info Helper</h1>
-    <div class="buttons">
-      <button id="btn-unyou" class="btn">運用管理</button>
-      <button id="btn-yobou" class="btn">予防接種</button>
-      <button id="btn-seijin" class="btn">成人保健</button>
-      <button id="btn-boshi" class="btn">母子保健</button>
+    
+    <!-- カテゴリボタン表示エリア -->
+    <div class="buttons" id="category-buttons">
+      <!-- JavaScriptで動的に生成 -->
     </div>
+    
+    <!-- サブアイテム表示エリア(最初は非表示) -->
+    <div class="sub-items" id="sub-items-container" style="display: none;">
+      <button class="back-button" id="back-button">← 戻る</button>
+      <h2 id="sub-items-title"></h2>
+      <div class="sub-items-list" id="sub-items-list">
+        <!-- JavaScriptで動的に生成 -->
+      </div>
+    </div>
+    
     <div class="config-info">
       <small id="config-status">設定読み込み中...</small>
     </div>

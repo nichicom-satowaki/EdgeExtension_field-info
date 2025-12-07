@@ -98,6 +98,50 @@ input[type="text"]:focus, select:focus {
   box-sizing: border-box;
 }
 
+/* 階層表示用のスタイル */
+.category-group {
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.category-group h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #0078d4;
+  font-weight: 600;
+}
+
+.sub-item {
+  margin-left: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border-left: 3px solid #0078d4;
+}
+
+.sub-item-label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.sub-item-dto {
+  font-family: monospace;
+  color: #666;
+  font-size: 13px;
+}
+
+.no-items {
+  margin-left: 20px;
+  color: #999;
+  font-style: italic;
+  font-size: 13px;
+}
+
 .description {
   display: block;
   margin-top: 6px;

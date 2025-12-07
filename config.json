@@ -1,6 +1,31 @@
 {
-  "boshiDto": "A103PregnancyDto",
-  "unyouDto": "",
-  "yobouDto": "",
-  "seijinDto": ""
+  "categories": {
+    "unyou": {
+      "label": "運用管理",
+      "items": []
+    },
+    "yobou": {
+      "label": "予防接種",
+      "items": []
+    },
+    "seijin": {
+      "label": "成人保健",
+      "items": []
+    },
+    "boshi": {
+      "label": "母子保健",
+      "items": [
+    {
+      "id": "pregnancy",
+      "label": "妊娠届出情報",
+      "dtoName": "A103PregnancyDto"
+    },
+    {
+      "id": "PregnancyQuestionnaire",
+      "label": "妊娠届出アンケート",
+      "dtoName": "A103PregnancyQuestionnaireDto"
+    }
+      ]
+    }
+  }
 }

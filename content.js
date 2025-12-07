@@ -1,3 +1,10 @@
+(() => {
+if (window.__FIELD_INFO_HELPER_CONTENT_ACTIVE__) {
+  console.log('Field Info Helper content script is already active.');
+  return;
+}
+window.__FIELD_INFO_HELPER_CONTENT_ACTIVE__ = true;
+
 // メッセージリスナーを設定
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('メッセージを受信しました:', request);
@@ -7,10 +14,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // シンプルに単一のDTO名で処理
       const dtoName = request.dtoName;
       console.log('処理するDTO名:', dtoName);
-      filterAndNavigateToDto(dtoName);
+      if (request.replaceQueue) {
+        clearPendingQueue('単体リクエスト受信につきキューをクリアします。');
+      }
+      enqueueDto(dtoName);
       sendResponse({ success: true });
     } catch (error) {
       console.error('処理中にエラーが発生:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+
+  if (request.action === 'batchFilterAndNavigate') {
+    try {
+      const dtoNames = Array.isArray(request.dtoNames) ? request.dtoNames : [];
+      console.log('複数DTOの処理リクエストを受信:', dtoNames);
+      if (dtoNames.length === 0) {
+        sendResponse({ success: false, error: 'dtoNamesが空です' });
+        return;
+      }
+      if (request.replaceQueue) {
+        clearPendingQueue('一括リクエスト受信につき待機キューをリセットします。');
+      }
+      dtoNames.forEach(name => enqueueDto(name));
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('複数DTO処理中にエラーが発生:', error);
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -30,19 +59,143 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // 同期的にレスポンスを返す（非同期処理は使用しない）
 });
 
-// 処理実行管理用のフラグ
+// 処理実行管理用のフラグとキュー
 let isProcessingDto = false;
+let dtoQueue = [];
+let isNavigatingBackToSearch = false;
+const FILTER_RETRY_LIMIT = 10;
+const FILTER_RETRY_DELAY_MS = 500;
+const DOWNLOAD_SETTLE_DELAY_MS = 2000;
+
+// Chrome storageでキューを保持（この拡張専用の目印付き）
+const STORAGE_KEY_QUEUE = 'fieldInfoHelperQueue';
+const STORAGE_OWNER = 'EdgeExtension_field-info';
+let queueInitialized = false;
+
+async function initializeQueueFromStorage() {
+  try {
+    const data = await chrome.storage.local.get(STORAGE_KEY_QUEUE);
+    const saved = data[STORAGE_KEY_QUEUE];
+    if (saved && saved.owner === STORAGE_OWNER && Array.isArray(saved.queue)) {
+      dtoQueue = [...saved.queue, ...dtoQueue];
+      console.log('保存されていたキューを復元しました:', dtoQueue);
+    } else {
+      console.log('保存されたキューは見つかりませんでした。');
+    }
+  } catch (error) {
+    console.error('キューの復元に失敗しました:', error);
+  } finally {
+    queueInitialized = true;
+    setTimeout(processDtoQueue, 300);
+  }
+}
+
+function saveQueueToStorage() {
+  const payload = {
+    owner: STORAGE_OWNER,
+    queue: dtoQueue
+  };
+  chrome.storage.local.set({ [STORAGE_KEY_QUEUE]: payload }).catch(error => {
+    console.error('キューの保存に失敗しました:', error);
+  });
+}
+
+function clearPendingQueue(reason = 'リクエストのため待機キューをリセットします。') {
+  if (dtoQueue.length > 0) {
+    console.log(`${reason} (削除件数: ${dtoQueue.length})`);
+  }
+  dtoQueue = [];
+  saveQueueToStorage();
+}
+
+function enqueueDto(dtoName) {
+  dtoQueue.push(dtoName);
+  console.log(`DTOをキューに追加しました: ${dtoName} (残り: ${dtoQueue.length})`);
+  saveQueueToStorage();
+  if (queueInitialized) {
+    processDtoQueue();
+  } else {
+    console.log('キュー初期化待ちのため、少し後で処理を開始します。');
+  }
+}
+
+function processDtoQueue() {
+  if (!queueInitialized) {
+    console.log('キューがまだ準備できていません。初期化完了を待ちます。');
+    return;
+  }
+  if (isProcessingDto) {
+    console.log('別のDTOを処理中のため、次の処理は待機します。');
+    return;
+  }
+  const nextDto = dtoQueue.shift();
+  if (!nextDto) {
+    console.log('処理待ちのDTOはありません。');
+    saveQueueToStorage();
+    return;
+  }
+  isProcessingDto = true;
+  console.log(`DTO処理開始: ${nextDto}`);
+  saveQueueToStorage();
+  filterAndNavigateToDto(nextDto);
+}
+
+function completeDtoProcessing(delayMs = 0, message = 'DTO処理完了。次のリクエストを確認します。', options = {}) {
+  const { autoResume = true } = options;
+  setTimeout(() => {
+    isProcessingDto = false;
+    saveQueueToStorage();
+    console.log(message);
+    if (autoResume) {
+      processDtoQueue();
+    } else {
+      console.log('次のDTO処理はページ遷移後に再開します。');
+    }
+  }, delayMs);
+}
+
+function isOnSearchPage() {
+  return window.location.href.includes('/core/setup/field-info') && !window.location.href.includes('/member');
+}
+
+function buildSearchPageUrl() {
+  const match = window.location.href.match(/(.*\/core\/setup\/field-info)(?:\/[^\/]+\/member.*)?/);
+  return match ? match[1] : null;
+}
+
+function navigateBackToSearchPage() {
+  if (isOnSearchPage()) {
+    console.log('既に検索画面にいるため、戻り操作は不要です。');
+    return;
+  }
+  if (isNavigatingBackToSearch) {
+    console.log('検索画面へ戻る処理中です。');
+    return;
+  }
+  const searchUrl = buildSearchPageUrl();
+  if (!searchUrl) {
+    console.error('検索画面URLを特定できませんでした。');
+    alert('検索画面に戻ることができませんでした。ページ構造を確認してください。');
+    return;
+  }
+  isNavigatingBackToSearch = true;
+  console.log('検索画面に戻ります:', searchUrl);
+  if (window.location.href !== searchUrl) {
+    window.location.href = searchUrl;
+  }
+}
 
 // DTOフィルタを設定して結果ページに遷移する関数
-function filterAndNavigateToDto(dtoName) {
+function filterAndNavigateToDto(dtoName, attempt = 0) {
   try {
-    // 重複実行を防ぐ
-    if (isProcessingDto) {
-      console.log('⚠️ 処理が既に実行中です。重複実行をスキップします。');
+    if (!isOnSearchPage()) {
+      console.log('検索画面ではないため、処理を一時停止して検索画面に戻ります。');
+      dtoQueue.unshift(dtoName);
+      saveQueueToStorage();
+      completeDtoProcessing(0, '検索画面で処理を再開します。', { autoResume: false });
+      setTimeout(() => navigateBackToSearchPage(), 300);
       return;
     }
-    
-    isProcessingDto = true;
     console.log(`DTO処理開始: ${dtoName}`);
     
     // DTOフィルタの入力フィールドを探す
@@ -66,15 +219,23 @@ function filterAndNavigateToDto(dtoName) {
         if (!success) {
           console.log('結果が見つかりませんでした');
           alert(`指定されたDTO名での結果が見つかりませんでした: ${dtoName}`);
+          completeDtoProcessing();
         }
       }, 1000);
     } else {
+      if (attempt < FILTER_RETRY_LIMIT) {
+        console.log(`DTOフィルタの入力フィールドがまだ見つかりません。再試行します (${attempt + 1}/${FILTER_RETRY_LIMIT})`);
+        setTimeout(() => filterAndNavigateToDto(dtoName, attempt + 1), FILTER_RETRY_DELAY_MS);
+        return;
+      }
       console.error('DTOフィルタの入力フィールドが見つかりません');
       alert('DTOフィルタの入力フィールドが見つかりません。ページの構造を確認してください。');
+      completeDtoProcessing();
     }
   } catch (error) {
     console.error('フィルタ設定中にエラーが発生しました:', error);
     alert('処理中にエラーが発生しました: ' + error.message);
+    completeDtoProcessing();
   }
 }
 
@@ -176,26 +337,7 @@ function clickResultLink(dtoName) {
     if (targetLink) {
       console.log('対象のリンクをクリック:', targetLink.href);
       targetLink.click();
-      
-      // メンバーページに遷移後、十分な時間を待ってからテキスト出力を実行
-      setTimeout(() => {
-        if (window.location.href.includes(`/core/setup/field-info/${dtoName}/member`)) {
-          console.log('メンバーページに遷移しました。さらに待機してからテキスト出力を実行します。');
-          waitForPageAndDataLoad(() => {
-            exportToTextFile(dtoName);
-            // 処理完了後にフラグをリセット
-            setTimeout(() => {
-              isProcessingDto = false;
-              console.log('✓ DTO処理完了。フラグをリセットしました。');
-            }, 2000);
-          });
-        } else {
-          // 遷移に失敗した場合もフラグをリセット
-          isProcessingDto = false;
-          console.log('遷移に失敗。フラグをリセットしました。');
-        }
-      }, 7000); // 7秒待機に大幅延長
-      
+      schedulePostNavigationTasks(dtoName);
       return true;
     } else if (foundInTable) {
       // テーブル内に結果があるが、リンクが見つからない場合は直接遷移
@@ -203,11 +345,11 @@ function clickResultLink(dtoName) {
       const targetUrl = `${currentOrigin}/core/setup/field-info/${dtoName}/member`;
       console.log('テーブル内に結果があるため、直接遷移:', targetUrl);
       window.location.href = targetUrl;
-      
+      schedulePostNavigationTasks(dtoName);
       return true;
     } else {
       console.log(`${dtoName} の結果が見つかりません`);
-      isProcessingDto = false; // フラグをリセット
+      completeDtoProcessing(0, '結果が見つからなかったため処理を終了します。');
       return false;
     }
   } catch (error) {
@@ -217,15 +359,38 @@ function clickResultLink(dtoName) {
     const targetUrl = `${currentOrigin}/core/setup/field-info/${dtoName}/member`;
     console.log('エラーのため直接遷移を試行:', targetUrl);
     window.location.href = targetUrl;
-    
-    // エラー時も後でフラグをリセット
-    setTimeout(() => {
-      isProcessingDto = false;
-      console.log('エラー後にフラグをリセットしました。');
-    }, 10000);
+    schedulePostNavigationTasks(dtoName);
     
     return true;
   }
+}
+
+function schedulePostNavigationTasks(dtoName) {
+  // メンバーページに遷移後、十分な時間を待ってからテキスト出力を実行
+  setTimeout(() => {
+    if (window.location.href.includes(`/core/setup/field-info/${dtoName}/member`)) {
+      console.log('メンバーページに遷移しました。さらに待機してからテキスト出力を実行します。');
+      waitForPageAndDataLoad(() => {
+        exportToTextFile(dtoName, {
+          onSuccess: () => {
+            setTimeout(() => {
+              completeDtoProcessing(0, '✓ DTO処理完了。検索画面に戻ります。', { autoResume: false });
+              navigateBackToSearchPage();
+            }, DOWNLOAD_SETTLE_DELAY_MS);
+          },
+          onError: () => {
+            setTimeout(() => {
+              completeDtoProcessing(0, 'エラー後に検索画面へ戻ります。', { autoResume: false });
+              navigateBackToSearchPage();
+            }, DOWNLOAD_SETTLE_DELAY_MS);
+          }
+        });
+      });
+    } else {
+      // 遷移に失敗した場合もフラグをリセット
+      completeDtoProcessing(0, '遷移に失敗しました。次を処理します。');
+    }
+  }, 7000); // 7秒待機
 }
 
 // ページが完全に読み込まれた後に初期化
@@ -240,6 +405,7 @@ function initialize() {
   console.log('現在のURL:', window.location.href);
   console.log('ページタイトル:', document.title);
   console.log('DOM読み込み状態:', document.readyState);
+  initializeQueueFromStorage();
   
   // 設定確認とトラブルシューティング情報を表示
   if (window.location.href.includes('/member')) {
@@ -329,7 +495,7 @@ function waitForPageAndDataLoad(callback) {
       console.log('1. DTOファイルの存在確認');
       console.log('2. システム設定の確認');
       console.log('3. 管理者への問い合わせ');
-      
+      completeDtoProcessing(1000, 'データ読み込みでエラーが発生したため処理を中止しました。');
       return;
     }
     
@@ -357,7 +523,18 @@ function waitForPageAndDataLoad(callback) {
 }
 
 // テキストファイル出力機能
-function exportToTextFile(dtoName) {
+function exportToTextFile(dtoName, options = {}) {
+  const { onSuccess, onError } = options;
+  const notifySuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
+  const notifyError = () => {
+    if (onError) {
+      onError();
+    }
+  };
   console.log(`=== テキストファイル出力開始 ===`);
   console.log(`DTO名: ${dtoName}`);
   console.log(`現在のURL: ${window.location.href}`);
@@ -384,10 +561,7 @@ function exportToTextFile(dtoName) {
       console.log('=== 処理完了（エラーのため中止）===');
       
       // エラー時もフラグをリセット
-      setTimeout(() => {
-        isProcessingDto = false;
-        console.log('エラー後にフラグをリセットしました。');
-      }, 1000);
+      notifyError();
       
       return; // エラーの場合は処理を終了
     }
@@ -502,6 +676,7 @@ function exportToTextFile(dtoName) {
       // 手動でテキストファイルを作成
       console.log('手動でテキストファイルを作成します');
       extractAndDownloadData(dtoName);
+      setTimeout(notifySuccess, 1000);
       return;
     }
     
@@ -514,14 +689,10 @@ function exportToTextFile(dtoName) {
       try {
         // 拡張機能による直接データ抽出
         extractAndDownloadData(dtoName);
+        setTimeout(notifySuccess, 1000);
       } catch (extractError) {
         console.error('データ抽出中にエラーが発生しました:', extractError);
-        
-        // フラグをリセット
-        setTimeout(() => {
-          isProcessingDto = false;
-          console.log('エラー後にフラグをリセットしました。');
-        }, 1000);
+        notifyError();
       }
     }, 3000); // 3秒待機に短縮
     
@@ -912,3 +1083,6 @@ function extractFromFullPageWithFormData(dtoName, formControlData) {
     console.error('フォームデータ含む抽出エラー:', error);
   }
 }
+
+})();
+
