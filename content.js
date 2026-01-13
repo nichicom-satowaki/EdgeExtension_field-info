@@ -86,7 +86,19 @@ async function initializeQueueFromStorage() {
     console.error('キューの復元に失敗しました:', error);
   } finally {
     queueInitialized = true;
-    setTimeout(processDtoQueue, 300);
+    // 検索画面の場合のみ、UIの準備完了を待ってからキュー処理を開始
+    if (isOnSearchPage() && dtoQueue.length > 0) {
+      console.log(`検索画面を検出。${dtoQueue.length}件のDTOが待機中です。UIの準備を待機します...`);
+      waitForSearchPageReady(() => {
+        console.log('検索画面の準備が完了しました。キュー処理を開始します。');
+        processDtoQueue();
+      });
+    } else if (dtoQueue.length > 0) {
+      console.log('検索画面以外でキューが存在します。300ms後に処理を試みます。');
+      setTimeout(processDtoQueue, 300);
+    } else {
+      console.log('処理待ちのキューはありません。');
+    }
   }
 }
 
@@ -158,30 +170,149 @@ function isOnSearchPage() {
   return window.location.href.includes('/core/setup/field-info') && !window.location.href.includes('/member');
 }
 
+// 検索画面のUI準備完了を待つ関数
+function waitForSearchPageReady(callback) {
+  let attempts = 0;
+  const maxAttempts = 20; // 最大20回（10秒）
+  const interval = 500; // 500ms間隔
+  
+  const checkReady = () => {
+    attempts++;
+    console.log(`検索画面UI確認 (${attempts}/${maxAttempts})`);
+    
+    // 1. テーブルとデータ行の存在を確認（ヘッダー行を除く）
+    const tableRows = document.querySelectorAll('tbody tr, table tr');
+    const hasDataRows = tableRows.length > 1; // ヘッダー + 最低1行のデータ
+    
+    // 2. DTOテーブルの特徴的な列（「DTO名」など）が存在するか確認
+    const hasExpectedColumns = document.body.textContent.includes('DTO名') || 
+                              document.body.textContent.includes('Entity名');
+    
+    // 3. フィルター入力欄の存在確認（複数ある場合があるので厳密にチェック）
+    const allInputs = document.querySelectorAll('input[type="text"], input:not([type])');
+    const hasInput = allInputs.length > 0;
+    
+    console.log(`  - テーブル行数: ${tableRows.length}, データ行: ${hasDataRows}`);
+    console.log(`  - 期待される列: ${hasExpectedColumns}`);
+    console.log(`  - 入力欄数: ${allInputs.length}`);
+    
+    if (hasDataRows && hasExpectedColumns && hasInput) {
+      console.log('✓ 検索画面UIの準備完了を確認しました（テーブルデータ読み込み済み）');
+      callback();
+    } else if (attempts >= maxAttempts) {
+      console.log('⚠️ タイムアウト: 検索画面UIが見つかりません。処理を続行します。');
+      console.log(`  最終状態: データ行=${hasDataRows}, 列=${hasExpectedColumns}, 入力=${hasInput}`);
+      callback();
+    } else {
+      console.log('検索画面UIがまだ準備できていません。待機を継続...');
+      setTimeout(checkReady, interval);
+    }
+  };
+  
+  // 初回チェック前に少し待機（DOM構築を待つ）
+  setTimeout(checkReady, 500);
+}
+
 function buildSearchPageUrl() {
   const match = window.location.href.match(/(.*\/core\/setup\/field-info)(?:\/[^\/]+\/member.*)?/);
   return match ? match[1] : null;
 }
 
-function navigateBackToSearchPage() {
+function navigateBackToSearchPage(attempt = 0) {
+  const MAX_ATTEMPTS = 10;
+  const RETRY_DELAY = 500;
+  
   if (isOnSearchPage()) {
     console.log('既に検索画面にいるため、戻り操作は不要です。');
+    isNavigatingBackToSearch = false;
     return;
   }
-  if (isNavigatingBackToSearch) {
+  if (isNavigatingBackToSearch && attempt === 0) {
     console.log('検索画面へ戻る処理中です。');
     return;
   }
+  
+  isNavigatingBackToSearch = true;
+  console.log(`検索画面に戻る処理を開始します (試行: ${attempt + 1}/${MAX_ATTEMPTS})`);
+  
+  // メンバーページからは直接URL遷移を使用（ボタン操作は不要）
+  console.log('メンバーページから検索画面へURL遷移で戻ります');
+  fallbackToUrlNavigation();
+}
+
+// グリッドラジオボタンを探す補助関数
+function findGridRadioButton() {
+  // 1. name="viewMode" と value="grid" で探す
+  let gridRadio = document.querySelector('input[type="radio"][name="viewMode"][value="grid"]');
+  if (gridRadio) {
+    console.log('グリッドラジオボタンを発見 (viewMode)');
+    return gridRadio;
+  }
+  
+  // 2. ラベルテキスト「グリッド」から探す
+  const labels = document.querySelectorAll('label');
+  for (const label of labels) {
+    const labelText = label.textContent || label.innerText || '';
+    if (labelText.includes('グリッド')) {
+      const radio = label.querySelector('input[type="radio"]');
+      if (radio) {
+        console.log('グリッドラジオボタンを発見 (ラベル経由)');
+        return radio;
+      }
+    }
+  }
+  
+  // 3. value="grid" を持つラジオボタンを探す
+  const radios = document.querySelectorAll('input[type="radio"]');
+  for (const radio of radios) {
+    if (radio.value === 'grid') {
+      console.log('グリッドラジオボタンを発見 (value=grid)');
+      return radio;
+    }
+  }
+  
+  console.log('グリッドラジオボタンが見つかりませんでした');
+  return null;
+}
+
+// 「DTO選択へ」リンクを探す補助関数
+function findDtoSelectLink() {
+  // 1. href="/core/setup/field-info" のリンクを探す
+  const links = document.querySelectorAll('a[href="/core/setup/field-info"]');
+  if (links.length > 0) {
+    console.log(`「DTO選択へ」リンクを発見 (${links.length}件)`);
+    return links[0]; // 最初のものを返す
+  }
+  
+  // 2. テキストに「DTO選択へ」を含むリンクを探す
+  const allLinks = document.querySelectorAll('a');
+  for (const link of allLinks) {
+    const linkText = (link.textContent || link.innerText || '').trim();
+    if (linkText.includes('DTO選択へ') || linkText.includes('DTO選択')) {
+      console.log('「DTO選択へ」リンクを発見 (テキスト経由)');
+      return link;
+    }
+  }
+  
+  console.log('「DTO選択へ」リンクが見つかりませんでした');
+  return null;
+}
+
+// URL遷移にフォールバックする関数
+function fallbackToUrlNavigation() {
+  console.log('フォールバック: URL遷移で検索画面に戻ります');
   const searchUrl = buildSearchPageUrl();
   if (!searchUrl) {
     console.error('検索画面URLを特定できませんでした。');
     alert('検索画面に戻ることができませんでした。ページ構造を確認してください。');
+    isNavigatingBackToSearch = false;
     return;
   }
-  isNavigatingBackToSearch = true;
   console.log('検索画面に戻ります:', searchUrl);
   if (window.location.href !== searchUrl) {
     window.location.href = searchUrl;
+  } else {
+    isNavigatingBackToSearch = false;
   }
 }
 
@@ -268,6 +399,17 @@ function findFilterInput() {
   const possibleInputs = document.querySelectorAll('input[type="text"], input:not([type])');
   console.log('候補となる入力フィールド数:', possibleInputs.length);
   
+  // 優先順位1: テーブルヘッダー内の入力欄（最も確実）
+  const tableHeaders = document.querySelectorAll('th, thead');
+  for (const header of tableHeaders) {
+    const inputInHeader = header.querySelector('input[type="text"], input:not([type])');
+    if (inputInHeader) {
+      console.log('テーブルヘッダー内の入力フィールドを発見（最優先）:', inputInHeader);
+      return inputInHeader;
+    }
+  }
+  
+  // 優先順位2: DTO/フィルタに関連する親要素を持つ入力欄
   for (const input of possibleInputs) {
     const parent = input.closest('th, td, div, span, label');
     if (parent) {
@@ -279,9 +421,25 @@ function findFilterInput() {
     }
   }
   
-  // 最後の手段：最初のテキスト入力フィールドを使用
+  // 優先順位3: テーブルの直前にある入力欄
+  const tables = document.querySelectorAll('table');
+  if (tables.length > 0) {
+    const firstTable = tables[0];
+    let currentElement = firstTable.previousElementSibling;
+    while (currentElement) {
+      const inputNearTable = currentElement.querySelector('input[type="text"], input:not([type])');
+      if (inputNearTable) {
+        console.log('テーブル直前の入力フィールドを発見:', inputNearTable);
+        return inputNearTable;
+      }
+      currentElement = currentElement.previousElementSibling;
+      if (!currentElement || currentElement.tagName === 'TABLE') break;
+    }
+  }
+  
+  // 最後の手段：最初のテキスト入力フィールドを使用（リスクあり）
   if (possibleInputs.length > 0) {
-    console.log('最初のテキスト入力フィールドを使用:', possibleInputs[0]);
+    console.log('⚠️ 警告: 最初のテキスト入力フィールドを使用します:', possibleInputs[0]);
     return possibleInputs[0];
   }
   
@@ -390,7 +548,7 @@ function schedulePostNavigationTasks(dtoName) {
       // 遷移に失敗した場合もフラグをリセット
       completeDtoProcessing(0, '遷移に失敗しました。次を処理します。');
     }
-  }, 7000); // 7秒待機
+  }, 3000); // 3秒待機
 }
 
 // ページが完全に読み込まれた後に初期化
