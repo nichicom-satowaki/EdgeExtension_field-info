@@ -96,7 +96,7 @@ function displaySubItems(category) {
     allButton.className = 'sub-item-btn all-btn';
     allButton.textContent = '全部';
     allButton.addEventListener('click', () => {
-      executeBatch(category.items.map(item => item.dtoName));
+      executeBatch(category.items.map(item => ({ dtoName: item.dtoName, label: item.label })));
     });
     subItemsList.appendChild(allButton);
   }
@@ -109,7 +109,7 @@ function displaySubItems(category) {
     button.textContent = item.label;
     
     button.addEventListener('click', () => {
-      executeSearch(item.dtoName);
+      executeSearch({ dtoName: item.dtoName, label: item.label });
     });
     
     subItemsList.appendChild(button);
@@ -125,7 +125,7 @@ function displaySubItems(category) {
 }
 
 // 複数DTOを連続実行
-async function executeBatch(dtoNames) {
+async function executeBatch(dtoObjects) {
   try {
     // まず現在のfield-infoタブを取得します
     const tab = await getActiveFieldInfoTab();
@@ -136,7 +136,7 @@ async function executeBatch(dtoNames) {
 
     await sendMessageWithAutoInjection(tab.id, {
       action: 'batchFilterAndNavigate',
-      dtoNames: dtoNames,
+      dtoObjects: dtoObjects,
       replaceQueue: true
     });
 
@@ -148,10 +148,10 @@ async function executeBatch(dtoNames) {
 }
 
 // DTO検索を実行
-async function executeSearch(dtoName, options = {}) {
+async function executeSearch(dtoObject, options = {}) {
   const { closeAfter = true } = options;
   try {
-    console.log('検索を実行:', dtoName);
+    console.log('検索を実行:', dtoObject);
     
     // アクティブなタブを取得
     const tab = await getActiveFieldInfoTab();
@@ -162,7 +162,7 @@ async function executeSearch(dtoName, options = {}) {
     
     await sendMessageWithAutoInjection(tab.id, {
       action: 'filterAndNavigate',
-      dtoName: dtoName,
+      dtoObject: dtoObject,
       replaceQueue: true
     });
 

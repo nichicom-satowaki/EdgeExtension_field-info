@@ -15,16 +15,191 @@
     "boshi": {
       "label": "母子保健",
       "items": [
-    {
-      "id": "pregnancy",
-      "label": "妊娠届出情報",
-      "dtoName": "A103PregnancyDto"
-    },
-    {
-      "id": "PregnancyQuestionnaire",
-      "label": "妊娠届出アンケート",
-      "dtoName": "A103PregnancyQuestionnaireDto"
-    }
+        {
+          "id": "A103PregnancyDto",
+          "label": "妊娠届出情報",
+          "dtoName": "A103PregnancyDto"
+        },
+        {
+          "id": "A103PregnancyQuestionnaireDto",
+          "label": "妊娠届出アンケート",
+          "dtoName": "A103PregnancyQuestionnaireDto"
+        },
+        {
+          "id": "A103IssueDto",
+          "label": "母子健康手帳交付情報",
+          "dtoName": "A103IssueDto"
+        },
+        {
+          "id": "A103PregnancyCheckupDto",
+          "label": "妊婦健診結果",
+          "dtoName": "A103PregnancyCheckupDto"
+        },
+        {
+          "id": "A103PregnancyCheckupPaymentDto",
+          "label": "妊婦健診費用助成",
+          "dtoName": "A103PregnancyCheckupPaymentDto"
+        },
+        {
+          "id": "A103NursingCheckupPaymentDto",
+          "label": "産婦健診費用助成",
+          "dtoName": "A103NursingCheckupPaymentDto"
+        },
+        {
+          "id": "A103MotherDentalCheckupDto",
+          "label": "妊産婦歯科健診結果",
+          "dtoName": "A103MotherDentalCheckupDto"
+        },
+        {
+          "id": "A103PregnancyPreciseDto",
+          "label": "妊婦精密健診結果",
+          "dtoName": "A103PregnancyPreciseDto"
+        },
+        {
+          "id": "A103NursingCheckupDto",
+          "label": "産婦健診結果",
+          "dtoName": "A103NursingCheckupDto"
+        },
+        {
+          "id": "A103AssessmentDto",
+          "label": "アセスメント",
+          "dtoName": "A103AssessmentDto"
+        },
+        {
+          "id": "A103NursingPreciseDto",
+          "label": "産婦精密健診結果",
+          "dtoName": "A103NursingPreciseDto"
+        },
+        {
+          "id": "A103PostpartumPaymentDto",
+          "label": "産後ケア助成記録",
+          "dtoName": "A103PostpartumPaymentDto"
+        },
+        {
+          "id": "A103ChildBirthDto",
+          "label": "出産の状態に係る情報",
+          "dtoName": "A103ChildBirthDto"
+        },
+        {
+          "id": "A103BirthDto",
+          "label": "出生時状況",
+          "dtoName": "A103BirthDto"
+        },
+        {
+          "id": "A103HearingDto",
+          "label": "新生児聴覚検査結果",
+          "dtoName": "A103HearingDto"
+        },
+        {
+          "id": "A103HearingPaymentDto",
+          "label": "新生児聴覚検査費用助成",
+          "dtoName": "A103HearingPaymentDto"
+        },
+        {
+          "id": "A103ScheduleDto",
+          "label": "乳幼児健診対象者",
+          "dtoName": "A103ScheduleDto"
+        },
+        {
+          "id": "A103CheckupDetailDto",
+          "label": "乳幼児健診結果",
+          "dtoName": "A103CheckupDetailDto"
+        },
+        {
+          "id": "A103CheckupQuestionnaireDto",
+          "label": "乳幼児健診アンケート",
+          "dtoName": "A103CheckupQuestionnaireDto"
+        },
+        {
+          "id": "A103DentalCheckupDetailDto",
+          "label": "乳幼児歯科健診結果",
+          "dtoName": "A103DentalCheckupDetailDto"
+        },
+        {
+          "id": "A103ObservationScheduleDetailDto",
+          "label": "経過観察健診予定",
+          "dtoName": "A103ObservationScheduleDetailDto"
+        },
+        {
+          "id": "A103ObservationResultDetailDto",
+          "label": "経過観察健診結果",
+          "dtoName": "A103ObservationResultDetailDto"
+        },
+        {
+          "id": "A103HealthGuidanceTicketPublishDto",
+          "label": "保健指導票発行",
+          "dtoName": "A103HealthGuidanceTicketPublishDto"
+        },
+        {
+          "id": "A103HealthGuidanceTicketResultDto",
+          "label": "保健指導票実績",
+          "dtoName": "A103HealthGuidanceTicketResultDto"
+        },
+        {
+          "id": "A103AwayDto",
+          "label": "健診受診履歴",
+          "dtoName": "A103AwayDto"
+        },
+        {
+          "id": "A103PreciseRequestDto",
+          "label": "乳幼児精密健診依頼",
+          "dtoName": "A103PreciseRequestDto"
+        },
+        {
+          "id": "A103PreciseCheckupDetailDto",
+          "label": "乳幼児精密健診結果",
+          "dtoName": "A103PreciseCheckupDetailDto"
+        },
+        {
+          "id": "A103GraspedDetailDto",
+          "label": "乳幼児健診未受診管理",
+          "dtoName": "A103GraspedDetailDto"
+        },
+        {
+          "id": "A103RecommendationDto",
+          "label": "乳幼児健診未受診者勧奨情報",
+          "dtoName": "A103RecommendationDto"
+        },
+        {
+          "id": "A103VisitScheduleDetailDto",
+          "label": "母子保健訪問予定",
+          "dtoName": "A103VisitScheduleDetailDto"
+        },
+        {
+          "id": "A103VisitResultDetailDto",
+          "label": "母子保健訪問結果",
+          "dtoName": "A103VisitResultDetailDto"
+        },
+        {
+          "id": "A103ConsultationScheduleDetailDto",
+          "label": "母子保健個別指導予定",
+          "dtoName": "A103ConsultationScheduleDetailDto"
+        },
+        {
+          "id": "A103ConsultationResultDetailDto",
+          "label": "母子保健個別指導結果",
+          "dtoName": "A103ConsultationResultDetailDto"
+        },
+        {
+          "id": "A103RegularClassroomScheduleDto",
+          "label": "母子保健教育受付",
+          "dtoName": "A103RegularClassroomScheduleDto"
+        },
+        {
+          "id": "A103RegularClassroomResultDto",
+          "label": "母子保健教育結果",
+          "dtoName": "A103RegularClassroomResultDto"
+        },
+        {
+          "id": "A103FollowClassroomScheduleDto",
+          "label": "フォロー教室受付",
+          "dtoName": "A103FollowClassroomScheduleDto"
+        },
+        {
+          "id": "A103FollowClassroomResultDto",
+          "label": "フォロー教室結果",
+          "dtoName": "A103FollowClassroomResultDto"
+        }
       ]
     }
   }

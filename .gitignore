@@ -1,0 +1,24 @@
+# Generated output files
+output/
+
+# Extension packages
+*.zip
+*.crx
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node modules (if needed in future)
+node_modules/
+
+# Logs
+*.log

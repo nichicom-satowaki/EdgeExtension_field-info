@@ -193,13 +193,38 @@ input[type="text"]:focus, select:focus {
   transform: translateY(0);
 }
 
+.button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.primary-button {
+  background-color: #0078d4;
+  color: white;
+}
+
+.primary-button:hover {
+  background-color: #106ebe;
+  transform: translateY(-1px);
+}
+
+.primary-button:active {
+  transform: translateY(0);
+}
+
 .status {
   margin-top: 20px;
   padding: 12px;
   border-radius: 4px;
   text-align: center;
   font-weight: 500;
-  opacity: 0;
+  display: none;
   transition: opacity 0.3s ease;
 }
 
