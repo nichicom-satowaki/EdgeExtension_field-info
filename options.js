@@ -1,10 +1,7 @@
 // ページが読み込まれたときの初期化
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('Options page loaded');
   loadSettings();
-  loadDownloadSettings();
-  
-  // 保存ボタンのイベントリスナー
-  document.getElementById('save-button').addEventListener('click', saveDownloadSettings);
 });
 
 // 設定を読み込んで表示
@@ -80,42 +77,4 @@ function displaySettings(config) {
   });
 }
 
-// ダウンロード設定を読み込む
-async function loadDownloadSettings() {
-  try {
-    const result = await chrome.storage.sync.get('downloadFolder');
-    const downloadFolder = result.downloadFolder || '';
-    document.getElementById('download-folder').value = downloadFolder;
-    console.log('ダウンロード設定を読み込みました:', downloadFolder);
-  } catch (error) {
-    console.error('ダウンロード設定の読み込みに失敗しました:', error);
-  }
-}
 
-// ダウンロード設定を保存する
-async function saveDownloadSettings() {
-  try {
-    const downloadFolder = document.getElementById('download-folder').value.trim();
-    await chrome.storage.sync.set({ downloadFolder: downloadFolder });
-    
-    // 保存完了メッセージを表示
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = '設定を保存しました';
-    statusDiv.className = 'status success';
-    statusDiv.style.display = 'block';
-    
-    console.log('ダウンロード設定を保存しました:', downloadFolder);
-    
-    // 3秒後にメッセージを消す
-    setTimeout(() => {
-      statusDiv.style.display = 'none';
-    }, 3000);
-  } catch (error) {
-    console.error('ダウンロード設定の保存に失敗しました:', error);
-    
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = '保存に失敗しました';
-    statusDiv.className = 'status error';
-    statusDiv.style.display = 'block';
-  }
-}

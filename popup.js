@@ -7,6 +7,14 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Popup DOMContentLoaded イベント発火');
   loadConfigAndInitialize();
+  
+  // 設定ボタンのイベントリスナー
+  const settingsButton = document.getElementById('settings-button');
+  if (settingsButton) {
+    settingsButton.addEventListener('click', function() {
+      chrome.runtime.openOptionsPage();
+    });
+  }
 });
 
 // 設定を読み込んで初期化

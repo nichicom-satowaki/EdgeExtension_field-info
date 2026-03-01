@@ -888,26 +888,20 @@ function extractAndDownloadData(dtoName, label) {
     
     const fileName = `${dtoName}_${label}.txt`;
     
-    // ダウンロード設定を取得してダウンロード
-    chrome.storage.sync.get('downloadFolder', (result) => {
-      const downloadFolder = result.downloadFolder || '';
-      const filePath = downloadFolder ? `${downloadFolder}${fileName}` : fileName;
-      
-      chrome.downloads.download({
-        url: url,
-        filename: filePath,
-        saveAs: false
-      }, (downloadId) => {
-        if (chrome.runtime.lastError) {
-          console.error('ダウンロードエラー:', chrome.runtime.lastError);
-        } else {
-          console.log(`ダウンロード開始 (ID: ${downloadId}): ${filePath}`);
-        }
-        // クリーンアップ
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 1000);
-      });
+    chrome.downloads.download({
+      url: url,
+      filename: fileName,
+      saveAs: false
+    }, (downloadId) => {
+      if (chrome.runtime.lastError) {
+        console.error('ダウンロードエラー:', chrome.runtime.lastError);
+      } else {
+        console.log(`ダウンロード開始 (ID: ${downloadId}): ${fileName}`);
+      }
+      // クリーンアップ
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
     });
     
     console.log(`テキストファイル "${fileName}" をダウンロードしました`);

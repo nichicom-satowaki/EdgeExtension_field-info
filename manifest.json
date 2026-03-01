@@ -18,6 +18,10 @@
     "default_popup": "popup.html",
     "default_title": "Field Info Helper"
   },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": [
